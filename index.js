@@ -23,6 +23,7 @@ app.use(cookieParser());
 app.use(require("./routes/employee/addEmployee"));
 app.use(require("./routes/otp/veryfyOtp"));
 app.use(require("./routes/employee/EmpLogin"));
+app.use(require("./routes/employee/changePassword"));
 app.use(require("./routes/employee/getEmployee"));
 app.use(require("./routes/employee/updateEmployee"));
 app.use(require("./routes/employee/getAllEmployees"));
