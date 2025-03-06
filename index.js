@@ -18,6 +18,8 @@ app.use(
     credentials: true,
   })
 );
+app.use(express.json({ limit: "500mb" }));  // Adjust as needed
+app.use(express.urlencoded({ extended: true, limit: "500mb" }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(require("./routes/employee/addEmployee"));
