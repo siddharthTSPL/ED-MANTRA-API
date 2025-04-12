@@ -119,6 +119,7 @@ router.post(
         }
       }
     } catch (error) {
+      console.error("Create Employee Error:", error); 
       return res.json({
         data: null,
         error: commonErrorCodes.somthingWentWrong.msg,
