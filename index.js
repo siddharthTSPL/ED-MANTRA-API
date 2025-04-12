@@ -4,6 +4,9 @@ const express = require("express");
 // const InterviewSchedule = require("./modals/interviewSchedule"); // this line only for live production due to create table 
 // const Onboarding = require("./modals/candidateOnboarding"); // this line only for live production due to create table 
 // const Onboarding = require("./modals/vacancy"); // this line only for live production due to create table 
+//const Vacancy = require("./modals/vacancy"); // this line only for live production due to create table 
+// const MarketingLeads = require("./modals/marketingLeads");
+// const MarketingRemarks = require("./modals/marketingRemarks");
 const app = express();
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -91,8 +94,9 @@ app.use("/api", downloadDocRoutes);
 
 const downloadOrgDocRoutes = require("./routes/company/downloadDoc");
 app.use("/api", downloadOrgDocRoutes);
-
-
+app.use(require("./routes/marketing/addMarketingLeads"));
+app.use(require("./routes/marketing/getMarketingLead"));
+app.use(require("./routes/marketing/updateMarketingLeads"));
 // Schedule task to run every day at midnight
 cron.schedule('0 0 * * *', async () => {
   const thirtyDaysAgo = new Date(new Date() - 30 * 24 * 60 * 60 * 1000);
