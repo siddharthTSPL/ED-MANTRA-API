@@ -1,18 +1,20 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../../connections/db");
 const Employees = require("../../modals/employees");
+
 router.get(
-  "/api/getAllEmployees",
-  // authenticate(accecableModules),
+  "/api/getAllMarketingExecutive",
+  //   authenticate(accecableModules),
   async (req, res) => {
     try {
       const result = await Employees.findAll({
         where: {
-          empStatus: 'active',
-          // departmentId: ['sales', 'adminHO']
-        }
+          role: "MarketingExecutive",
+          empStatus: 'active'
+        },
       });
+      const data = result[0];
+
       res
         .status(200)
         .send({ data: result, message: "Data Fetched Successfully" });

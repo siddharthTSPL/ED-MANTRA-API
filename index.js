@@ -97,6 +97,11 @@ app.use("/api", downloadOrgDocRoutes);
 app.use(require("./routes/marketing/addMarketingLeads"));
 app.use(require("./routes/marketing/getMarketingLead"));
 app.use(require("./routes/marketing/updateMarketingLeads"));
+app.use(require("./routes/employee/getAllMarketingManager"));
+app.use(require("./routes/employee/getAllVendorManagementExecutive"));
+app.use(require("./routes/employee/getAllVendorManagementManager"));
+app.use(require("./routes/employee/getAllMarketingExecutive"));
+app.use(require("./routes/marketing/getVendorsByEmpId"));
 // Schedule task to run every day at midnight
 cron.schedule('0 0 * * *', async () => {
   const thirtyDaysAgo = new Date(new Date() - 30 * 24 * 60 * 60 * 1000);

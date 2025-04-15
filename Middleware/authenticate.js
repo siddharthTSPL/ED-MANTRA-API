@@ -32,6 +32,7 @@ const authenticate = (permissions) => {
           ? decoded.data.role.PlaybleModule
           : JSON.parse(decoded?.data?.role?.PlaybleModule || "[]");
 
+          console.log('auth auth check check', areAllStringsPresent(tokenPermissions, permissions))
         if (!areAllStringsPresent(tokenPermissions, permissions)) {
           return res.status(403).json({
             data: null,

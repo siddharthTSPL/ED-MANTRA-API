@@ -5,7 +5,7 @@ const authenticate = require("../../Middleware/authenticate");
 const Remarks = require("../../modals/marketingRemarks");
 const uuid = require("uuid");
 
-const accecableModules = [{ permission: "LEAD_MANAGEMENT" }, { permission: "MARKETING_MANAGEMENT" }];
+const accecableModules = [{ permission: "USER_MANAGEMENT" }, { permission: "MARKETING_MANAGEMENT" }];
 
 // Use ISO format for dateTimeString
 let dateTimeString = new Date().toISOString();
@@ -23,9 +23,9 @@ router.put(
     try {
       const leadId = req.params.leadId;
       const updatedData = req.body;
-
+      console.log(req.body)
       // Ensure required fields are present in the request body
-      if (!updatedData.LeadId || !req.rootUser.data.empId) {
+      if (!updatedData.LeadId || !updatedData?.empId) {
         return res.status(400).json({ error: "Missing required fields in request body" });
       }
 
@@ -34,7 +34,7 @@ router.put(
         remarkId: generateUniqueId(),
         remark: updatedData.remark,
         remarkDateTime: dateTimeString,
-        empId: req.rootUser.data.empId
+        empId: updatedData?.empId
       };
 
       // Check if remark is not empty or equal to 'Hello' before creating

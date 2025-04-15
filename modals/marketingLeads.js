@@ -76,12 +76,12 @@ const MarketingLeads = sequelize.define(
       allowNull: false,
     },
 
-    campaignPurpose: {
+    objective: {
       type: DataTypes.STRING, // Changed from DATE to STRING
       allowNull: false,
     },
 
-    otherCampaignPurpose: {
+    otherObjective: {
       type: DataTypes.STRING,
       allowNull: true,
     },
@@ -102,6 +102,16 @@ const MarketingLeads = sequelize.define(
     },
 
     otherSource: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    refSourceName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    refSourceMobile: {
       type: DataTypes.STRING,
       allowNull: true,
     },

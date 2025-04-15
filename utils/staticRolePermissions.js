@@ -56,10 +56,7 @@ const permissions = {
       id: "user_per-25",
       permission: "REPORTING_ATS",
     },
-    
   ],
-
-
 
   AdminDm: [
     {
@@ -110,15 +107,20 @@ const permissions = {
       id: "user_per-16",
       permission: "HR_MANAGEMENT",
     },
-       
   ],
-  AdminEM: [    
+
+  AdminEM: [
     {
       id: "user_per-25",
       permission: "REPORTING_ATS",
     },
   ],
+
   Counselor: [
+    {
+      id: "user_per-01",
+      permission: "USER_MANAGEMENT",
+    },
     {
       id: "user_per-27",
       permission: "LEAD_MANAGEMENT",
@@ -135,9 +137,14 @@ const permissions = {
       id: "user_per-31",
       permission: "DOC_MANAGEMENT",
     },
-    
   ],
+
   Telecaller: [
+    
+    {
+      id: "user_per-01",
+      permission: "USER_MANAGEMENT",
+    },
     {
       id: "user_per-33",
       permission: "SALES_MANAGEMENT",
@@ -159,14 +166,14 @@ const permissions = {
       permission: "EMAIL_INTEGRATION",
     },
   ],
+
   HrManager: [
-
-
     {
       id: "user_per-25",
       permission: "REPORTING_ATS",
     },
   ],
+
   HrExecutive: [
     {
       id: "user_per-25",
@@ -180,18 +187,21 @@ const permissions = {
       permission: "REPORTING_ATS",
     },
   ],
+
   FinanceManager: [
     {
       id: "user_per-41",
       permission: "FINANCE_MANAGEMENT",
     },
   ],
+
   FinanceExicutive: [
     {
       id: "user_per-43",
       permission: "FINANCE_MANAGEMENT",
     },
   ],
+
   Trainer: [
     {
       id: "user_per-44",
@@ -202,6 +212,7 @@ const permissions = {
       permission: "DOC_MANAGEMENT",
     },
   ],
+
   Tranee: [
     {
       id: "user_per-46",
@@ -213,68 +224,49 @@ const permissions = {
     },
   ],
 
-  // EmManager:[
-  //   {
-  //     id: "user_per-48",
-  //     permission: "ATS",
-  //   },
-  // ],
-  
-  // DmManager:[
-  //   {
-  //     id: "user_per-49",
-  //     permission: "USER_MANAGEMENT",
-  //   },
-  //   {
-  //     id: "user_per-50",
-  //     permission: "LEAD_MANAGEMENT",
-  //   },
-  //   {
-  //     id: "user_per-51",
-  //     permission: "CONTACT_MANAGMENT",
-  //   },
-  //   {
-  //     id: "user_per-52",
-  //     permission: "SALES_MANAGEMENT",
-  //   },
-  //   {
-  //     id: "user_per-53",
-  //     permission: "MARKETING_MANAGEMENT",
-  //   },
-  //   {
-  //     id: "user_per-54",
-  //     permission: "CUSTOM_SERVICES",
-  //   },
-  //   {
-  //     id: "user_per-55",
-  //     permission: "EMAIL_INTEGRATION",
-  //   },
-  //   {
-  //     id: "user_per-56",
-  //     permission: "DOC_MANAGEMENT",
-  //   },
-  //   {
-  //     id: "user_per-57",
-  //     permission: "SOCIAL_MEDIA_MANAGEMENt",
-  //   },
-  //   {
-  //     id: "user_per-58",
-  //     permission: "TRANING",
-  //   },
-  //   {
-  //     id: "user_per-59",
-  //     permission: "REPORTNIG",
-  //   },
-  //   {
-  //     id: "user_per-60",
-  //     permission: "HR_MANAGEMENT",
-  //   },
-  //   {
-  //     id: "user_per-61",
-  //     permission: "FINANCE_MANAGEMENT",
-  //   },
-  // ]
-  
+  VendorManagementManager: [
+    {
+      id: "user_per-07",
+      permission: "MARKETING_MANAGEMENT",
+    },
+    {
+      id: "user_per-01",
+      permission: "USER_MANAGEMENT",
+    },
+  ],
+
+  VendorManagementExecutive: [
+    {
+      id: "user_per-07",
+      permission: "MARKETING_MANAGEMENT",
+    },
+    {
+      id: "user_per-01",
+      permission: "USER_MANAGEMENT",
+    },
+  ],
+
+  MarketingManager: [
+    {
+      id: "user_per-07",
+      permission: "MARKETING_MANAGEMENT",
+    },
+    {
+      id: "user_per-01",
+      permission: "USER_MANAGEMENT",
+    },
+  ],
+
+  MarketingExecutive: [
+    {
+      id: "user_per-07",
+      permission: "MARKETING_MANAGEMENT",
+    },
+    {
+      id: "user_per-01",
+      permission: "USER_MANAGEMENT",
+    },
+  ],
 };
 
 const rolePermissions = (key) => {
@@ -303,6 +295,14 @@ const rolePermissions = (key) => {
       return JSON.stringify(permissions?.Trainer);
     case "Tranee":
       return JSON.stringify(permissions?.Tranee);
+    case "VendorManagementManager":
+      return JSON.stringify(permissions?.VendorManagementManager);
+    case "VendorManagementExecutive":
+      return JSON.stringify(permissions?.VendorManagementExecutive);
+    case "MarketingManager":
+      return JSON.stringify(permissions?.MarketingManager);
+    case "MarketingExecutive":
+      return JSON.stringify(permissions?.MarketingExecutive);
     default:
       break;
   }
