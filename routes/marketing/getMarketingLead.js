@@ -52,7 +52,7 @@ router.get(
           json_agg(
             json_build_object(
               'remark', mr."remark",
-              'remarkDateTime', mr."remarkDateTime",
+              'createdAt', mr."createdAt",
               'empId', mr."empId",
               'employee', json_build_object(
                 'fname', e."fname",

@@ -122,7 +122,7 @@ const MarketingLeads = sequelize.define(
     },
 
     dmMobile: {
-      type: DataTypes.STRING, // Fixed spelling from dmMobole to dmMobile
+      type: DataTypes.STRING, 
       allowNull: false,
     },
 
