@@ -102,6 +102,9 @@ app.use(require("./routes/employee/getAllVendorManagementExecutive"));
 app.use(require("./routes/employee/getAllVendorManagementManager"));
 app.use(require("./routes/employee/getAllMarketingExecutive"));
 app.use(require("./routes/marketing/getVendorsByEmpId"));
+app.use(require("./routes/marketing/deleteMarketingLead"));
+app.use(require("./routes/marketing/deleteBulkMarketingLead"));
+app.use(require("./routes/marketing/uploadMarketingLead"));
 // Schedule task to run every day at midnight
 cron.schedule('0 0 * * *', async () => {
   const thirtyDaysAgo = new Date(new Date() - 30 * 24 * 60 * 60 * 1000);
