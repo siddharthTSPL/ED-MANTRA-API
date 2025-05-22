@@ -8,6 +8,11 @@ const permissions = {
       id: "user_per-02",
       permission: "LEAD_MANAGEMENT",
     },
+
+    {
+      id: "user_per-04",
+      permission: "NOTICE_BOARD",
+    },
     {
       id: "user_per-05",
       permission: "CONTACT_MANAGMENT",
@@ -126,7 +131,7 @@ const permissions = {
       permission: "LEAD_MANAGEMENT",
     },
     {
-      id: "user_per-28",
+      id: "user_per-07",
       permission: "MARKETING_MANAGEMENT",
     },
     {
@@ -164,6 +169,10 @@ const permissions = {
     {
       id: "user_per-37",
       permission: "EMAIL_INTEGRATION",
+    },
+    {
+      id: "user_per-07",
+      permission: "MARKETING_MANAGEMENT",
     },
   ],
 
