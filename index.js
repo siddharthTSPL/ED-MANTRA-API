@@ -67,7 +67,6 @@ app.use(require("./routes/company/getAllCompany"));
 app.use(require("./routes/company/getAllComapnyUniquely"));
 app.use(require("./routes/company/getCompanyById"));
 app.use(require("./routes/company/updateCompanyById"));
-app.use(require("./routes/company/deleteAllCompany"));
 app.use(require("./routes/company/deleteCompanyById"));
 app.use(require("./routes/interview/addInterview"));
 app.use(require("./routes/interview/getAllInterview"));
@@ -105,6 +104,10 @@ app.use(require("./routes/marketing/getVendorsByEmpId"));
 app.use(require("./routes/marketing/deleteMarketingLead"));
 app.use(require("./routes/marketing/deleteBulkMarketingLead"));
 app.use(require("./routes/marketing/uploadMarketingLead"));
+app.use(require("./routes/ats/deleteBulkCandidate")); 
+app.use(require("./routes/company/deleteBulkCompany")); 
+app.use(require("./routes/dashboard/addNotice")); 
+app.use(require("./routes/dashboard/getNotice"));
 // Schedule task to run every day at midnight
 cron.schedule('0 0 * * *', async () => {
   const thirtyDaysAgo = new Date(new Date() - 30 * 24 * 60 * 60 * 1000);
