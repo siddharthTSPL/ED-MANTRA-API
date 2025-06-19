@@ -2,51 +2,62 @@ const express = require("express");
 const router = express.Router();
 const { Sequelize } = require("sequelize");
 const sequelize = require("../../connections/db");
-const authenticate = require("../../Middleware/authenticate");
-const MarketingLeads = require("../../modals/marketingLeads");
-const Employees = require("../../modals/employees");
-const MarketingRemarks = require("../../modals/marketingRemarks");
 
-const accessibleModules = [
-  { permission: "USER_MANAGEMENT" },
-  { permission: "MARKETING_MANAGEMENT" },
-];
-
+// GET vendors by employee ID with pagination
 router.get("/api/getVendorsByEmpId/:employeeId", async (req, res) => {
-    try {
-      const empId = req.params.employeeId;
-  
-      const results = await sequelize.query(`
-        SELECT 
-          ml."SrNo",
-          ml."LeadId",
-          ml."telecaller",
-          ml."clientName",
-          ml."collegeCategory",
-          ml."brief",
-          ml."pocName",
-          ml."pocMobile",
-          ml."pocEmail",
-          ml."pocDesignation",
-          ml."address",
-          ml."location",
-          ml."objective",
-          ml."otherObjective",
-          ml."interestLevel",
-          ml."status",
-          ml."source",
-          ml."otherSource",
-          ml."refSourceName",
-          ml."refSourceMobile",
-          ml."decisionMaker",
-          ml."dmMobile",
-          ml."dmDesignation",
-          ml."dmEmail",
-          ml."preferredContactTiming",
-          ml."nextfollow",
-          ml."createdAt" as "leadCreatedAt",
-          ml."updatedAt" as "leadUpdatedAt",
-          COALESCE(json_agg(
+  try {
+    const empId = req.params.employeeId;
+
+    // Pagination input
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 25;
+    const offset = (page - 1) * limit;
+
+    // Get total count
+    const [countResult] = await sequelize.query(`
+      SELECT COUNT(*) AS "totalCount"
+      FROM "MarketingLeads"
+      WHERE "telecaller" = :empId
+    `, {
+      replacements: { empId },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    const totalRecords = parseInt(countResult.totalCount);
+
+    // Get paginated data
+    const [results] = await sequelize.query(`
+      SELECT 
+        ml."SrNo",
+        ml."LeadId",
+        ml."telecaller",
+        ml."clientName",
+        ml."collegeCategory",
+        ml."brief",
+        ml."pocName",
+        ml."pocMobile",
+        ml."pocEmail",
+        ml."pocDesignation",
+        ml."address",
+        ml."location",
+        ml."objective",
+        ml."otherObjective",
+        ml."interestLevel",
+        ml."status",
+        ml."source",
+        ml."otherSource",
+        ml."refSourceName",
+        ml."refSourceMobile",
+        ml."decisionMaker",
+        ml."dmMobile",
+        ml."dmDesignation",
+        ml."dmEmail",
+        ml."preferredContactTiming",
+        ml."nextfollow",
+        ml."createdAt" AS "leadCreatedAt",
+        ml."updatedAt" AS "leadUpdatedAt",
+        COALESCE(
+          json_agg(
             DISTINCT jsonb_build_object(
               'remark', mr."remark",
               'remarkDateTime', mr."remarkDateTime",
@@ -56,29 +67,32 @@ router.get("/api/getVendorsByEmpId/:employeeId", async (req, res) => {
                 'role', e."role"
               )
             )
-          ) FILTER (WHERE mr."remark" IS NOT NULL), '[]') AS "remarks"
-        FROM "MarketingLeads" ml
-        LEFT JOIN "MarketingRemarks" mr ON ml."LeadId" = mr."LeadId"
-        LEFT JOIN "Employees" e ON mr."empId" = e."empId"
-        WHERE ml."telecaller" = :empId
-        GROUP BY ml."SrNo", ml."LeadId"
-        ORDER BY ml."SrNo" ASC
-      `, {
-        replacements: { empId },
-        type: Sequelize.QueryTypes.SELECT,
-      });
-  
-      if (results && results.length > 0) {
-        return res.status(200).send({ data: results, message: "Data found" });
-      } else {
-        return res.status(404).send({ data: null, message: "No data found for the provided employee ID" });
-      }
-    } catch (error) {
-      console.error("ERROR:", error);
-      return res.status(500).send({ message: "Internal server error", error });
-    }
-  });
-  
-  
+          ) FILTER (WHERE mr."remark" IS NOT NULL),
+          '[]'
+        ) AS "remarks"
+      FROM "MarketingLeads" ml
+      LEFT JOIN "MarketingRemarks" mr ON ml."LeadId" = mr."LeadId"
+      LEFT JOIN "Employees" e ON mr."empId" = e."empId"
+      WHERE ml."telecaller" = :empId
+      GROUP BY ml."SrNo", ml."LeadId"
+      ORDER BY ml."SrNo" ASC
+      LIMIT :limit OFFSET :offset
+    `, {
+      replacements: { empId, limit, offset },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    return res.status(200).send({
+      data: results,
+      message: "Data found",
+      currentPage: page,
+      totalPages: Math.ceil(totalRecords / limit),
+      totalRecords,
+    });
+  } catch (error) {
+    console.error("ERROR:", error);
+    return res.status(500).send({ message: "Internal server error", error });
+  }
+});
 
 module.exports = router;

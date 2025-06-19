@@ -5,6 +5,7 @@ const { Sequelize, Op } = require("sequelize");
 const Remarks = require("../../modals/remarks");
 const Employees = require("../../modals/employees");
 const authenticate = require("../../Middleware/authenticate");
+
 const accecableModules = [
   { permission: "USER_MANAGEMENT" },
   { permission: "LEAD_MANAGEMENT" },
@@ -12,7 +13,15 @@ const accecableModules = [
 
 router.get("/api/getLead", authenticate(accecableModules), async (req, res) => {
   try {
+    // ✅ Pagination parameters with defaults
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = (page - 1) * limit;
+
+    // ✅ Fetch paginated data with only the latest remark
     const data = await ExcelData.findAll({
+      offset,
+      limit,
       attributes: [
         "SrNo",
         "LeadId",
@@ -37,41 +46,34 @@ router.get("/api/getLead", authenticate(accecableModules), async (req, res) => {
       include: [
         {
           model: Remarks,
-          attributes: [
-            "remark",
-            "remarkDateTime",
-            "empId",
-            "createdAt",
-          ],
+          attributes: ["remark", "remarkDateTime", "empId", "createdAt"],
           include: [
             {
               model: Employees,
               attributes: ["fname", "role"],
-              where: {
-                empId: {
-                  [Op.col]: "Remarks.empId",
-                },
-              },
               required: true,
             },
           ],
-          separate: true,  // This forces Sequelize to use a subquery for Remarks
-          order: [["createdAt", "ASC"]],
+          // ✅ Only fetch latest remark per lead
+          limit: 1,
+          order: [["createdAt", "DESC"]],
         },
       ],
-
-      
-
       order: [["SrNo", "ASC"]],
     });
 
-    if (data) {
-      return res.status(200).send({ data, message: "Data found " });
-    } else {
-      return res.status(200).send({ data: null, message: "Data not found " });
-    }
+    // ✅ Optional: Count total records for pagination
+    const totalCount = await ExcelData.count();
+
+    return res.status(200).send({
+      data,
+      totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / limit),
+      message: "Data fetched successfully",
+    });
   } catch (error) {
-    console.log(error);
+    console.error("Error in /api/getLead:", error);
     return res.status(500).send({ message: "An error occurred", error });
   }
 });

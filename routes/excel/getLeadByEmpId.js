@@ -1,20 +1,35 @@
 const express = require("express");
 const router = express.Router();
 const ExcelData = require("../../modals/excelData");
-const { Op, Sequelize } = require("sequelize");
+const { Op } = require("sequelize");
 const Remarks = require("../../modals/remarks");
 const Employees = require("../../modals/employees");
 
 router.get("/api/getLeadByEmpId/:employeeId", async (req, res) => {
   try {
     const empId = req.params.employeeId;
-    const data = await ExcelData.findAll({
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    // Total count for pagination
+    const totalCount = await ExcelData.count({
       where: {
         telecaller: empId,
-        status: {
-          [Op.notIn]: ["Registration", "Admission"],
-        },
+        status: { [Op.notIn]: ["Registration", "Admission"] },
       },
+    });
+
+    const leads = await ExcelData.findAll({
+      where: {
+        telecaller: empId,
+        status: { [Op.notIn]: ["Registration", "Admission"] },
+      },
+      attributes: [
+        'SrNo', 'LeadId', 'telecaller', 'fullName', 'mobile', 'altMobile', 'email',
+        'state', 'city', 'pincode', 'query', 'status', 'rating',
+        'createdAt', 'updatedAt', 'nextfollow', 'source', 'personName', 'personContact',
+      ],
       include: [
         {
           model: Remarks,
@@ -24,54 +39,30 @@ router.get("/api/getLeadByEmpId/:employeeId", async (req, res) => {
               model: Employees,
               attributes: ['fname', 'role'],
               where: {
-                empId: {
-                  [Op.col]: 'Remarks.empId', // Using Op.col to reference column
-                },
+                empId: { [Op.col]: 'Remarks.empId' },
               },
               required: true,
             },
           ],
-          separate: true, // This forces Sequelize to use a subquery for Remarks
+          separate: true,
           order: [["createdAt", "ASC"]],
         },
       ],
-
-      
-      attributes: [
-        'SrNo',
-        'LeadId',
-        'telecaller',
-        'fullName',
-        'mobile',
-        'altMobile',
-        'email',
-        'state',
-        'city',
-        'pincode',
-        'query',
-        'status',
-        'rating',
-        'createdAt',
-        'updatedAt',
-        'nextfollow',
-        'source',
-        'personName',
-        'personContact',
-      ],
-      order: [["SrNo", "ASC"]], // Sort by SrNo in ascending order
+      order: [["SrNo", "ASC"]],
+      offset,
+      limit,
       nest: true,
     });
 
-    const jsonData = data.map(lead => lead.toJSON());
-    console.log(jsonData);
-
-    if (data && data.length > 0) {
-      res.status(200).send({ data, message: "Data found" });
-    } else {
-      res.status(404).send({ message: "No data found for the provided employee ID" });
-    }
+    res.status(200).json({
+      data: leads,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      totalCount,
+      message: "Data fetched successfully",
+    });
   } catch (error) {
-    console.error(error);
+    console.error("Error in getLeadByEmpId API:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
