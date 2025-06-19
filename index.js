@@ -7,6 +7,8 @@ const express = require("express");
 //const Vacancy = require("./modals/vacancy"); // this line only for live production due to create table 
 // const MarketingLeads = require("./modals/marketingLeads");
 // const MarketingRemarks = require("./modals/marketingRemarks");
+//const Location = require('./modals/locations')(sequelize, DataTypes);
+//const Sector = require('./modals/sector')(sequelize, DataTypes);
 const app = express();
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -108,6 +110,12 @@ app.use(require("./routes/ats/deleteBulkCandidate"));
 app.use(require("./routes/company/deleteBulkCompany")); 
 app.use(require("./routes/dashboard/addNotice")); 
 app.use(require("./routes/dashboard/getNotice"));
+app.use(require("./routes/ats/searchCandidates"));
+// app.use(require("./routes/ats/assignLocation"));
+// app.use(require("./routes/ats/assignSector"));
+// app.use(require("./routes/ats/CandidateRegistartionByEmpId"));
+// app.use(require("./routes/ats/getCandidateByEmpId"));
+
 // Schedule task to run every day at midnight
 cron.schedule('0 0 * * *', async () => {
   const thirtyDaysAgo = new Date(new Date() - 30 * 24 * 60 * 60 * 1000);
