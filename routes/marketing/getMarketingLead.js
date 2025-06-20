@@ -4,28 +4,25 @@ const { Sequelize, Op } = require("sequelize");
 const sequelize = require("../../connections/db");
 const authenticate = require("../../Middleware/authenticate");
 
-// Optional: Authentication Middleware
-const accecableModules = [
+const accessibleModules = [
   { permission: "USER_MANAGEMENT" },
   { permission: "MARKETING_MANAGEMENT" },
 ];
 
-// router.get("/api/getMarketingLead", authenticate(accecableModules), async (req, res) => {
-router.get("/api/getMarketingLead", async (req, res) => {
+router.get("/api/getMarketingLead", authenticate(accessibleModules), async (req, res) => {
   try {
-    // Pagination params
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 25;
+    const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
 
-    // Total count query
+    // ✅ Get total record count
     const [countResult] = await sequelize.query(`
       SELECT COUNT(*) AS "totalCount" FROM "MarketingLeads"
     `);
-    const totalRecords = parseInt(countResult[0].totalCount);
+    const totalCount = parseInt(countResult[0]?.totalCount || 0);
 
-    // Paginated data query
-    const [results] = await sequelize.query(`
+    // ✅ Fetch paginated data with remarks + employee details
+    const [leads] = await sequelize.query(`
       SELECT 
         ml."SrNo",
         ml."LeadId",
@@ -53,8 +50,8 @@ router.get("/api/getMarketingLead", async (req, res) => {
         ml."dmEmail",
         ml."preferredContactTiming",
         ml."nextfollow",
-        ml."createdAt" as "leadCreatedAt",
-        ml."updatedAt" as "leadUpdatedAt",
+        ml."createdAt" AS "leadCreatedAt",
+        ml."updatedAt" AS "leadUpdatedAt",
         COALESCE(
           json_agg(
             DISTINCT jsonb_build_object(
@@ -66,7 +63,8 @@ router.get("/api/getMarketingLead", async (req, res) => {
                 'role', e."role"
               )
             )
-          ) FILTER (WHERE mr."remark" IS NOT NULL), '[]'
+          ) FILTER (WHERE mr."remark" IS NOT NULL),
+          '[]'
         ) AS "remarks"
       FROM "MarketingLeads" ml
       LEFT JOIN "MarketingRemarks" mr ON ml."LeadId" = mr."LeadId"
@@ -76,20 +74,19 @@ router.get("/api/getMarketingLead", async (req, res) => {
       LIMIT ${limit} OFFSET ${offset}
     `);
 
-    if (results.length > 0) {
-      return res.status(200).send({
-        data: results,
-        message: "Data found",
-        currentPage: page,
-        totalPages: Math.ceil(totalRecords / limit),
-        totalRecords,
-      });
-    } else {
-      return res.status(200).send({ data: [], message: "No data found" });
-    }
+    return res.status(200).json({
+      data: leads,
+      totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / limit),
+      message: leads.length > 0 ? "Marketing leads fetched successfully" : "No marketing leads found",
+    });
   } catch (error) {
-    console.error("Error fetching marketing leads:", error);
-    return res.status(500).send({ message: "An error occurred", error });
+    console.error("Error in /api/getMarketingLead:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching marketing leads",
+      error,
+    });
   }
 });
 

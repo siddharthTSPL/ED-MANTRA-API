@@ -4,15 +4,69 @@ const ExcelData = require("../../modals/excelData");
 const { Op } = require("sequelize");
 const Remarks = require("../../modals/remarks");
 const Employees = require("../../modals/employees");
+const authenticate = require("../../Middleware/authenticate");
 
-router.get("/api/getLeadByEmpId/:employeeId", async (req, res) => {
+const accessibleModules = [
+  { permission: "USER_MANAGEMENT" },
+  { permission: "LEAD_MANAGEMENT" },
+];
+
+router.get("/api/getLeadByEmpId/:employeeId", authenticate(accessibleModules), async (req, res) => {
   try {
     const empId = req.params.employeeId;
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
 
-    // Total count for pagination
+    const leads = await ExcelData.findAll({
+      where: {
+        telecaller: empId,
+        status: { [Op.notIn]: ["Registration", "Admission"] },
+      },
+      offset,
+      limit,
+      attributes: [
+        "SrNo",
+        "LeadId",
+        "telecaller",
+        "fullName",
+        "mobile",
+        "altMobile",
+        "email",
+        "state",
+        "city",
+        "pincode",
+        "query",
+        "status",
+        "rating",
+        "source",
+        "personName",
+        "personContact",
+        "createdAt",
+        "updatedAt",
+        "nextfollow",
+      ],
+      include: [
+        {
+          model: Remarks,
+          attributes: ["remark", "remarkDateTime", "empId", "createdAt"],
+          include: [
+            {
+              model: Employees,
+              attributes: ["fname", "role"],
+              required: true,
+            },
+          ],
+          separate: true,
+          limit: 1,
+          order: [["createdAt", "DESC"]],
+        },
+      ],
+      order: [["SrNo", "ASC"]],
+    });
+
+    const cleanData = leads.filter(row => row && typeof row.SrNo !== "undefined");
+
     const totalCount = await ExcelData.count({
       where: {
         telecaller: empId,
@@ -20,50 +74,19 @@ router.get("/api/getLeadByEmpId/:employeeId", async (req, res) => {
       },
     });
 
-    const leads = await ExcelData.findAll({
-      where: {
-        telecaller: empId,
-        status: { [Op.notIn]: ["Registration", "Admission"] },
-      },
-      attributes: [
-        'SrNo', 'LeadId', 'telecaller', 'fullName', 'mobile', 'altMobile', 'email',
-        'state', 'city', 'pincode', 'query', 'status', 'rating',
-        'createdAt', 'updatedAt', 'nextfollow', 'source', 'personName', 'personContact',
-      ],
-      include: [
-        {
-          model: Remarks,
-          attributes: ['remark', 'remarkDateTime', 'empId', 'createdAt'],
-          include: [
-            {
-              model: Employees,
-              attributes: ['fname', 'role'],
-              where: {
-                empId: { [Op.col]: 'Remarks.empId' },
-              },
-              required: true,
-            },
-          ],
-          separate: true,
-          order: [["createdAt", "ASC"]],
-        },
-      ],
-      order: [["SrNo", "ASC"]],
-      offset,
-      limit,
-      nest: true,
-    });
-
     res.status(200).json({
-      data: leads,
-      totalPages: Math.ceil(totalCount / limit),
-      currentPage: page,
+      data: cleanData,
       totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / limit),
       message: "Data fetched successfully",
     });
   } catch (error) {
-    console.error("Error in getLeadByEmpId API:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error in /api/getLeadByEmpId:", error);
+    res.status(500).json({
+      message: "An error occurred while fetching leads",
+      error,
+    });
   }
 });
 
