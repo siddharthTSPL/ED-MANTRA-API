@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const ExcelData = require("../../modals/excelData");
-const { Sequelize, Op } = require("sequelize");
+const { Sequelize } = require("sequelize");
 const Remarks = require("../../modals/remarks");
 const Employees = require("../../modals/employees");
 const authenticate = require("../../Middleware/authenticate");
@@ -13,12 +13,10 @@ const accecableModules = [
 
 router.get("/api/getLead", authenticate(accecableModules), async (req, res) => {
   try {
-    // ✅ Pagination parameters with defaults
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 100;
+    const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
 
-    // ✅ Fetch paginated data with only the latest remark
     const data = await ExcelData.findAll({
       offset,
       limit,
@@ -54,19 +52,25 @@ router.get("/api/getLead", authenticate(accecableModules), async (req, res) => {
               required: true,
             },
           ],
-          // ✅ Only fetch latest remark per lead
           limit: 1,
+          separate: true,
           order: [["createdAt", "DESC"]],
         },
       ],
       order: [["SrNo", "ASC"]],
     });
 
-    // ✅ Optional: Count total records for pagination
-    const totalCount = await ExcelData.count();
+    const cleanData = data.filter(
+      (row) => row && typeof row.SrNo !== "undefined"
+    );
+
+    const totalCount = await ExcelData.count({
+      distinct: true,
+      col: "LeadId", // Or use "SrNo" if that's your unique ID
+    });
 
     return res.status(200).send({
-      data,
+      data: cleanData,
       totalCount,
       currentPage: page,
       totalPages: Math.ceil(totalCount / limit),
@@ -74,7 +78,10 @@ router.get("/api/getLead", authenticate(accecableModules), async (req, res) => {
     });
   } catch (error) {
     console.error("Error in /api/getLead:", error);
-    return res.status(500).send({ message: "An error occurred", error });
+    return res.status(500).send({
+      message: "An error occurred while fetching leads",
+      error,
+    });
   }
 });
 

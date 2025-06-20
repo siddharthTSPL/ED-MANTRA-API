@@ -4,74 +4,94 @@ const ExcelData = require("../../modals/excelData");
 const { Op } = require("sequelize");
 const Remarks = require("../../modals/remarks");
 const Employees = require("../../modals/employees");
+const authenticate = require("../../Middleware/authenticate");
 
-router.get("/api/getAdmissionLeadbyEmpId/:employeeId", async (req, res) => {
-  try {
-    const empId = req.params.employeeId;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 25;
-    const offset = (page - 1) * limit;
+const accessibleModules = [
+  { permission: "USER_MANAGEMENT" },
+  { permission: "LEAD_MANAGEMENT" },
+];
 
-    const totalRecords = await ExcelData.count({
-      where: {
-        telecaller: empId,
-        status: "Admission",
-      },
-    });
+router.get(
+  "/api/getAdmissionLeadbyEmpId/:employeeId",
+  authenticate(accessibleModules),
+  async (req, res) => {
+    try {
+      const empId = req.params.employeeId;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+      const offset = (page - 1) * limit;
 
-    const data = await ExcelData.findAll({
-      where: {
-        telecaller: empId,
-        status: "Admission",
-      },
-      include: [
-        {
-          model: Remarks,
-          attributes: ['remark', 'remarkDateTime', 'empId', 'createdAt'],
-          include: [
-            {
-              model: Employees,
-              attributes: ['fname', 'role'],
-              where: {
-                empId: {
-                  [Op.col]: 'Remarks.empId',
-                },
-              },
-              required: true,
-            },
-          ],
-          separate: true,
-          order: [['createdAt', 'ASC']],
+      const leads = await ExcelData.findAll({
+        where: {
+          telecaller: empId,
+          status: "Admission",
         },
-      ],
-      attributes: [
-        'SrNo', 'LeadId', 'telecaller', 'fullName', 'mobile', 'altMobile', 'email',
-        'state', 'city', 'pincode', 'query', 'status', 'rating',
-        'createdAt', 'updatedAt', 'nextfollow', 'source', 'personName', 'personContact'
-      ],
-      order: [['SrNo', 'ASC']],
-      offset,
-      limit,
-      nest: true,
-    });
-
-    const jsonData = data.map(lead => lead.toJSON());
-
-    if (data && data.length > 0) {
-      res.status(200).send({
-        data: jsonData,
-        message: "Data found",
-        currentPage: page,
-        totalPages: Math.ceil(totalRecords / limit),
-        totalRecords,
+        offset,
+        limit,
+        attributes: [
+          "SrNo",
+          "LeadId",
+          "telecaller",
+          "fullName",
+          "mobile",
+          "altMobile",
+          "email",
+          "state",
+          "city",
+          "pincode",
+          "query",
+          "status",
+          "rating",
+          "source",
+          "personName",
+          "personContact",
+          "createdAt",
+          "updatedAt",
+          "nextfollow",
+        ],
+        include: [
+          {
+            model: Remarks,
+            attributes: ["remark", "remarkDateTime", "empId", "createdAt"],
+            include: [
+              {
+                model: Employees,
+                attributes: ["fname", "role"],
+                required: true,
+              },
+            ],
+            separate: true,
+            limit: 1,
+            order: [["createdAt", "DESC"]],
+          },
+        ],
+        order: [["SrNo", "ASC"]],
       });
-    } else {
-      res.status(404).send({ message: "No data found for the provided employee ID" });
+
+      const cleanData = leads.filter((row) => row && typeof row.SrNo !== "undefined");
+
+      const totalCount = await ExcelData.count({
+        where: {
+          telecaller: empId,
+          status: "Admission",
+        },
+      });
+
+      return res.status(200).json({
+        data: cleanData,
+        totalCount,
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit),
+        message: "Admission leads fetched successfully",
+      });
+    } catch (error) {
+      console.error("Error in /api/getAdmissionLeadbyEmpId:", error);
+      return res.status(500).json({
+        message: "An error occurred while fetching admission leads",
+        error,
+      });
     }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error" });
   }
-});
+);
 
 module.exports = router;

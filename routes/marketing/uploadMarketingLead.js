@@ -23,7 +23,7 @@ const upload = multer({ storage: storage });
 async function readMarketingLeads(filePath) {
   const workbook = new Excel.Workbook();
   await workbook.xlsx.readFile(filePath);
-  const worksheet = workbook.getWorksheet();
+ const worksheet = workbook.worksheets[0];
 
   const headers = worksheet.getRow(1).values;
   const rows = [];
@@ -35,23 +35,20 @@ async function readMarketingLeads(filePath) {
       });
 
       // If "nextfollow" column is blank, populate it with the current date plus two days
-      if (!rowData.nextfollow) {
-        // Create a new date object for the current date
-        const currentDate = new Date();
-      
-        // Add two days to the current date
-        currentDate.setDate(currentDate.getDate() + 2);
-      
-        // Set the time part of the date to 11:00 AM IST
-        currentDate.setHours(11);
-        currentDate.setMinutes(0);
-        currentDate.setSeconds(0);
-        currentDate.setMilliseconds(0);
-      
-        // Assign the calculated date to nextfollow property
-        rowData.nextfollow = currentDate;
-      }
-      
+     let nextFollowDate = rowData.nextfollow;
+
+// If the cell is a string or invalid date, parse and validate
+if (!nextFollowDate || isNaN(new Date(nextFollowDate).getTime())) {
+  const currentDate = new Date();
+  currentDate.setDate(currentDate.getDate() + 2);
+  currentDate.setHours(11, 0, 0, 0);
+  nextFollowDate = currentDate;
+} else {
+  nextFollowDate = new Date(nextFollowDate); // ensure it's a real Date object
+}
+
+rowData.nextfollow = nextFollowDate;
+
 
       rows.push(rowData);
     }
@@ -62,34 +59,19 @@ async function readMarketingLeads(filePath) {
 
 
 const bulkInsertData = async (dataArray) => {
+  const BATCH_SIZE = 1000;
   try {
-    // Use bulkCreate with option { ignoreDuplicates: true }
-    await MarketingLeads.bulkCreate(dataArray, { ignoreDuplicates: true });
-
-    // If successful, return true
+    for (let i = 0; i < dataArray.length; i += BATCH_SIZE) {
+      const batch = dataArray.slice(i, i + BATCH_SIZE);
+      await MarketingLeads.bulkCreate(batch, { ignoreDuplicates: true });
+    }
     return true;
   } catch (error) {
-    // If there's an error, check if it's due to a unique constraint violation
-    if (error.name === "SequelizeUniqueConstraintError") {
-      // If the error is due to a duplicate entry, delete all the duplicates and try again
-      const uniqueKeys = Object.keys(error.fields);
-      const where = {};
-
-      // Generate a where clause to delete the duplicates
-      uniqueKeys.forEach((key) => {
-        where[key] = error.fields[key];
-      });
-
-      // Delete the duplicates and retry
-      await MarketingLeads.destroy({ where: where });
-      return await bulkInsertData(dataArray);
-    } else {
-      // If the error is not due to a duplicate entry, return false
-      console.error("Error during bulk insert:", error);
-      return false;
-    }
+    console.error("Error during batch insert:", error);
+    return false;
   }
 };
+
 
 router.post(
   "/api/marketingLead/upload",

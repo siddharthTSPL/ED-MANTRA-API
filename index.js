@@ -67,7 +67,7 @@ app.use(require("./routes/excel/recoverBulkLead"));
 app.use(require("./routes/company/addCompany"));
 app.use(require("./routes/company/getAllCompany"));
 app.use(require("./routes/company/getAllComapnyUniquely"));
-app.use(require("./routes/company/getCompanyById"));
+// app.use(require("./routes/company/getCompanyById"));
 app.use(require("./routes/company/updateCompanyById"));
 app.use(require("./routes/company/deleteCompanyById"));
 app.use(require("./routes/interview/addInterview"));
