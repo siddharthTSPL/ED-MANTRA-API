@@ -23,11 +23,6 @@ router.post("/api/getAllUniqueCompany", async (req, res) => {
                 createdBy: empId, // Assuming there is a createdBy field in Vacancy
                
             },
-            // attributes: [
-            //     [Sequelize.fn('DISTINCT', Sequelize.col('companyId')), 'companyId'],
-            //     'jobProfile',
-            // ],
-            // raw: true,  // Returns plain objects
         });
 
         if (result.length === 0) {
