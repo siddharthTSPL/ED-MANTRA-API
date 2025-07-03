@@ -9,12 +9,12 @@ router.get("/api/getAllCandidates", async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
 
-    // ✅ Start fresh: combine all filters in Op.and[]
+   
     const whereConditions = {
       [Op.and]: [],
     };
 
-    // ✅ Smart universal search (firstName, lastName, phone, combined name)
+
     if (req.query.search) {
       const searchTerm = req.query.search.trim();
 
