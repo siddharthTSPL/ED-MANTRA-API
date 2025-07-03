@@ -5,8 +5,11 @@ const Employees = require("../../modals/employees");
 const Vacancy = require("../../modals/vacancy");
 const { commonErrorCodes } = require("../../statusCodes/errorCodes");
 
+
+
 router.get("/api/getAllVacancy", async (req, res) => {
   try {
+     console.log("🧪 FULL req.query:", req.query); // ✅ MOVE HERE
     const empId = req.query.empId;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
@@ -25,73 +28,76 @@ router.get("/api/getAllVacancy", async (req, res) => {
       });
     }
 
-    let filterConditions = {};
-    const andConditions = [];
+    const filterConditions = {};
 
-    if (req.query.companyName) {
-      andConditions.push(
-        where(fn("LOWER", col("companyName")), {
-          [Op.eq]: req.query.companyName.toLowerCase().trim(),
-        })
-      );
-    }
+    // ✅ Handle comma-separated multi-select
+    if (req.query.sector) {
+      const sectors = Array.isArray(req.query.sector)
+        ? req.query.sector
+        : req.query.sector.split(",").map((s) => s.trim());
 
-    if (req.query.primaryPOCMobile) {
-      andConditions.push(
-        where(fn("LOWER", col("primaryPOCMobile")), {
-          [Op.eq]: req.query.primaryPOCMobile.toLowerCase().trim(),
-        })
-      );
-    }
-
-    if (req.query.jobDiscription) {
-      andConditions.push(
-        where(fn("LOWER", col("jobDiscription")), {
-          [Op.eq]: req.query.jobDiscription.toLowerCase().trim(),
-        })
-      );
+      filterConditions.sector = { [Op.in]: sectors };
     }
 
     if (req.query.jobProfile) {
-      filterConditions.jobProfile = { [Op.eq]: req.query.jobProfile.trim() };
+      const profiles = Array.isArray(req.query.jobProfile)
+        ? req.query.jobProfile
+        : req.query.jobProfile.split(",").map((p) => p.trim());
+
+      filterConditions.jobProfile = { [Op.in]: profiles };
     }
 
-    if (req.query.sector) {
-      filterConditions.sector = { [Op.eq]: req.query.sector.trim() };
-    }
-
+    // Exact match filters
     if (req.query.vacancyStatus) {
       filterConditions.vacancyStatus = {
         [Op.eq]: req.query.vacancyStatus.trim(),
       };
     }
-
-    if (req.query.location) {
-      andConditions.push(
-        where(fn("LOWER", col("location")), {
-          [Op.eq]: req.query.location.toLowerCase().trim(),
-        })
-      );
-    }
-
     if (req.query.noOfVacancy) {
       filterConditions.noOfVacancy = { [Op.eq]: req.query.noOfVacancy };
     }
-
     if (req.query.salaryRangeMin) {
       filterConditions.salaryRangeMin = { [Op.eq]: req.query.salaryRangeMin };
     }
-
     if (req.query.salaryRangeMax) {
       filterConditions.salaryRangeMax = { [Op.eq]: req.query.salaryRangeMax };
     }
-
     if (req.query.experience) {
       filterConditions.experience = { [Op.eq]: req.query.experience };
     }
-
     if (req.query.pdcDate) {
       filterConditions.pdcDate = { [Op.eq]: req.query.pdcDate };
+    }
+    if (req.query.genderpref) {
+      filterConditions.genderpref = { [Op.eq]: req.query.genderpref.trim() };
+    }
+    if (req.query.createdBy) {
+      filterConditions.createdBy = { [Op.eq]: req.query.createdBy };
+    }
+
+    // Case-insensitive text filters
+    if (req.query.companyName) {
+      filterConditions.companyName = {
+        [Op.iLike]: req.query.companyName.trim(),
+      };
+    }
+
+    if (req.query.primaryPOCMobile) {
+      filterConditions.primaryPOCMobile = {
+        [Op.iLike]: req.query.primaryPOCMobile.trim(),
+      };
+    }
+
+    if (req.query.jobDiscription) {
+      filterConditions.jobDiscription = {
+        [Op.iLike]: req.query.jobDiscription.trim(),
+      };
+    }
+
+    if (req.query.location) {
+      filterConditions.location = {
+        [Op.iLike]: req.query.location.trim(),
+      };
     }
 
     if (req.query.tANDc) {
@@ -100,99 +106,75 @@ router.get("/api/getAllVacancy", async (req, res) => {
       };
     }
 
-    if (req.query.genderpref) {
-      filterConditions.genderpref = { [Op.eq]: req.query.genderpref.trim() };
+    // Date filters: createdAt
+ 
+    if (req.query.createdAt?.date) {
+  const dateVal = req.query.createdAt.date;
+  const comparator = req.query.createdAt.comparator || "=";
+  const parsedDate = new Date(dateVal);
+
+  if (!isNaN(parsedDate)) {
+    if (comparator === "=" || comparator === "!=") {
+      const start = new Date(parsedDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(parsedDate);
+      end.setHours(23, 59, 59, 999);
+
+      filterConditions.createdAt = {
+        [comparator === "=" ? Op.between : Op.notBetween]: [start, end],
+      };
+    } else if (["<", ">", "<=", ">="].includes(comparator)) {
+      filterConditions.createdAt = {
+        [Op[comparator]]: parsedDate,
+      };
     }
+  }
+}
 
-    if (req.query.createdBy) {
-      filterConditions.createdBy = { [Op.eq]: req.query.createdBy };
+
+    // Date filters: updatedAt
+  if (req.query.updatedAt?.date) {
+  const dateVal = req.query.updatedAt.date;
+  const comparator = req.query.updatedAt.comparator || "=";
+  const parsedDate = new Date(dateVal);
+
+  if (!isNaN(parsedDate)) {
+    if (comparator === "=" || comparator === "!=") {
+      const start = new Date(parsedDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(parsedDate);
+      end.setHours(23, 59, 59, 999);
+
+      filterConditions.updatedAt = {
+        [comparator === "=" ? Op.between : Op.notBetween]: [start, end],
+      };
+    } else if (["<", ">", "<=", ">="].includes(comparator)) {
+      filterConditions.updatedAt = {
+        [Op[comparator]]: parsedDate,
+      };
     }
+  }
+}
 
-    if (req.query.createdAt && req.query.createdAt.date) {
-      const dateVal = req.query.createdAt.date;
-      const comparator = req.query.createdAt.comparator || "=";
-      const parsedDate = new Date(dateVal);
-
-      if (!isNaN(parsedDate)) {
-        const start = new Date(parsedDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(parsedDate);
-        end.setHours(23, 59, 59, 999);
-
-        switch (comparator) {
-          case "=":
-            filterConditions.createdAt = { [Op.between]: [start, end] };
-            break;
-          case "!=":
-            filterConditions.createdAt = { [Op.notBetween]: [start, end] };
-            break;
-          case ">":
-            filterConditions.createdAt = { [Op.gt]: end };
-            break;
-          case "<":
-            filterConditions.createdAt = { [Op.lt]: start };
-            break;
-          case ">=":
-            filterConditions.createdAt = { [Op.gte]: start };
-            break;
-          case "<=":
-            filterConditions.createdAt = { [Op.lte]: end };
-            break;
-        }
-      }
-    }
-
-    if (req.query.updatedAt && req.query.updatedAt.date) {
-      const dateVal = req.query.updatedAt.date;
-      const comparator = req.query.updatedAt.comparator || "=";
-      const parsedDate = new Date(dateVal);
-
-      if (!isNaN(parsedDate)) {
-        const start = new Date(parsedDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(parsedDate);
-        end.setHours(23, 59, 59, 999);
-
-        switch (comparator) {
-          case "=":
-            filterConditions.updatedAt = { [Op.between]: [start, end] };
-            break;
-          case "!=":
-            filterConditions.updatedAt = { [Op.notBetween]: [start, end] };
-            break;
-          case ">":
-            filterConditions.updatedAt = { [Op.gt]: end };
-            break;
-          case "<":
-            filterConditions.updatedAt = { [Op.lt]: start };
-            break;
-          case ">=":
-            filterConditions.updatedAt = { [Op.gte]: start };
-            break;
-          case "<=":
-            filterConditions.updatedAt = { [Op.lte]: end };
-            break;
-        }
-      }
-    }
-
-    if (!['SuperAdmin', 'AdminEM'].includes(empRecord.role)) {
+    // Role-based access
+    if (!["SuperAdmin", "AdminEM"].includes(empRecord.role)) {
       filterConditions.createdBy = empId;
     }
 
-    const finalWhere = {
-      ...filterConditions,
-    };
-    if (andConditions.length > 0) {
-      finalWhere[Op.and] = andConditions;
-    }
+    // Query the DB
+    console.log("🔍 FilterConditions.createdAt:", filterConditions.createdAt);
 
     const { count, rows } = await Vacancy.findAndCountAll({
-      where: finalWhere,
+      where: filterConditions,
       offset,
       limit,
       order: [["createdAt", "DESC"]],
     });
+
+    console.log("✅ Returned rows:", rows.length);
+    if (rows.length > 0) {
+      console.log("🟢 First record createdAt:", rows[0].createdAt);
+    }
 
     const enhancedRows = rows.map((vacancy) => {
       const pdcDate = new Date(vacancy.pdcDate);
@@ -213,12 +195,12 @@ router.get("/api/getAllVacancy", async (req, res) => {
       totalPages: Math.ceil(count / limit),
     });
   } catch (error) {
-    console.error("Error in /api/getAllVacancy:", error);
+    console.error("❌ Error in /api/getAllVacancy:", error);
     return res.status(500).json({
       data: [],
       error: commonErrorCodes.somthingWentWrong.msg,
       status: commonErrorCodes.somthingWentWrong.code,
-      message: null,
+      message: error.message,
     });
   }
 });

@@ -5,8 +5,10 @@ const Employees = require("../../modals/employees");
 const Interview = require("../../modals/interviewSchedule");
 const { commonErrorCodes } = require("../../statusCodes/errorCodes");
 
-router.post("/api/getAllScheduledInterview", async (req, res) => {
+router.get("/api/getAllScheduledInterview", async (req, res) => {
   try {
+    console.log("🔍 FULL req.query:", req.query);
+
     const {
       empId,
       page = 1,
@@ -18,7 +20,8 @@ router.post("/api/getAllScheduledInterview", async (req, res) => {
       jobProfile,
       interviewDate,
       candidateStatus,
-    } = req.body;
+      createdBy,
+    } = req.query;
 
     if (!empId) {
       return res.status(400).json({
@@ -39,92 +42,79 @@ router.post("/api/getAllScheduledInterview", async (req, res) => {
 
     const offset = (page - 1) * limit;
 
-    // 🔎 Build filters
     const filterConditions = {
       candidateStatus: {
         [Op.notIn]: ["Joined", "Terminated", "Working", "Rejected"],
       },
     };
 
-    // ✅ Only apply createdBy filter if user is NOT admin
-    const isAdmin = user.role === "SuperAdmin" || user.role === "AdminEM";
+    const isAdmin = ["SuperAdmin", "AdminEM"].includes(user.role);
 
-    // ✅ Secure handling of createdBy filter
     if (isAdmin) {
-      // Admin can see all and filter by any createdBy
-      if (req.body.createdBy) {
-        filterConditions.createdBy = req.body.createdBy;
+      if (createdBy) {
+        filterConditions.createdBy = createdBy;
       }
     } else {
-      // Normal user can only see their own entries
       filterConditions.createdBy = empId;
     }
 
-    // 🔎 Apply other filters
     if (candidateName) {
-      filterConditions.candidateName = { [Op.like]: `%${candidateName}%` };
+      filterConditions.candidateName = { [Op.iLike]: `%${candidateName}%` };
     }
-
     if (phone) {
-      filterConditions.phone = { [Op.like]: `%${phone}%` };
+      filterConditions.phone = { [Op.iLike]: `%${phone}%` };
     }
-
     if (email) {
-      filterConditions.email = { [Op.like]: `%${email}%` };
+      filterConditions.email = { [Op.iLike]: `%${email}%` };
     }
-
     if (companyName) {
-      filterConditions.companyName = { [Op.like]: `%${companyName}%` };
+      filterConditions.companyName = { [Op.iLike]: `%${companyName}%` };
     }
-
     if (jobProfile) {
-      filterConditions.jobProfile = { [Op.like]: `%${jobProfile}%` };
+      filterConditions.jobProfile = { [Op.iLike]: `%${jobProfile}%` };
     }
-
     if (candidateStatus) {
-      filterConditions.candidateStatus = { [Op.like]: `%${candidateStatus}%` };
+      filterConditions.candidateStatus = { [Op.iLike]: `%${candidateStatus}%` };
     }
 
-     if (createdBy) {
-          filterConditions.createdBy = { [Op.eq]: req.query.createdBy };
-        }
+ if (interviewDate?.date) {
+  const parsedDate = new Date(interviewDate.date);
+  if (!isNaN(parsedDate)) {
+    const start = new Date(parsedDate);
+    start.setHours(0, 0, 0, 0);
 
-    // 📅 Handle interviewDate
-    if (interviewDate && interviewDate.date) {
-      const dateVal = new Date(interviewDate.date);
-      const comparator = interviewDate.comparator || "=";
+    const end = new Date(parsedDate);
+    end.setHours(23, 59, 59, 999);
 
-      if (!isNaN(dateVal)) {
-        const targetDate = dateVal.toISOString().split("T")[0]; // 'YYYY-MM-DD'
+    const comparator = interviewDate.comparator || "=";
 
-        switch (comparator) {
-          case "=":
-            filterConditions.interviewDate = targetDate;
-            break;
-          case "!=":
-            filterConditions.interviewDate = { [Op.ne]: targetDate };
-            break;
-          case ">":
-            filterConditions.interviewDate = { [Op.gt]: targetDate };
-            break;
-          case "<":
-            filterConditions.interviewDate = { [Op.lt]: targetDate };
-            break;
-          case ">=":
-            filterConditions.interviewDate = { [Op.gte]: targetDate };
-            break;
-          case "<=":
-            filterConditions.interviewDate = { [Op.lte]: targetDate };
-            break;
-        }
-      }
+    switch (comparator) {
+      case "=":
+        filterConditions.interviewDate = { [Op.between]: [start, end] };
+        break;
+      case "!=":
+        filterConditions.interviewDate = { [Op.notBetween]: [start, end] };
+        break;
+      case ">":
+        filterConditions.interviewDate = { [Op.gt]: end };
+        break;
+      case "<":
+        filterConditions.interviewDate = { [Op.lt]: start };
+        break;
+      case ">=":
+        filterConditions.interviewDate = { [Op.gte]: start };
+        break;
+      case "<=":
+        filterConditions.interviewDate = { [Op.lte]: end };
+        break;
     }
+  }
+}
 
-    // ✅ Final DB call
     const result = await Interview.findAndCountAll({
       where: filterConditions,
       offset,
-      limit,
+      limit: parseInt(limit),
       order: [["createdAt", "DESC"]],
     });
 
@@ -135,12 +125,11 @@ router.post("/api/getAllScheduledInterview", async (req, res) => {
       totalRecords: result.count,
     });
   } catch (error) {
-    console.error("Error in Data Fetching:", error.message, error.stack);
+    console.error("Error in GET /getAllScheduledInterview:", error);
     return res.status(500).json({
       data: null,
-      error: commonErrorCodes.somthingWentWrong.msg,
-      status: commonErrorCodes.somthingWentWrong.code,
-      message: error.message,
+      errorCode: 1,
+      message: "Something went wrong",
     });
   }
 });
