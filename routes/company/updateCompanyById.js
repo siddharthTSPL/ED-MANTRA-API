@@ -1,12 +1,26 @@
 const express = require("express");
 const router = express.Router();
-const uuid = require("uuid");
 const multer = require("multer");
 const path = require("path");
 const Company = require("../../modals/company");
 const { commonErrorCodes } = require("../../statusCodes/errorCodes");
 
-router.post("/api/updateCompanyById", async (req, res) => {
+// Define storage for orgAgreeDoc
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "orguploads/");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname); // Or use unique name: Date.now() + "-" + file.originalname
+  },
+});
+
+const upload = multer({ storage: storage });
+
+// Apply multer to handle file upload
+router.post("/api/updateCompanyById", upload.fields([
+  { name: "orgAgreeDoc", maxCount: 1 },
+]), async (req, res) => {
   try {
     const {
       companyId,
@@ -20,20 +34,14 @@ router.post("/api/updateCompanyById", async (req, res) => {
       secondaryPOCDesignation,
       companyName,
       orgCategory,
-      vacancyStatus,
-      jobProfile,
-      sector,
-      location,
-      noOfVacancy,
-      salaryRangeMin,
-      salaryRangeMax,
-      experience,
-      dateOfCreation,
-      recruitementManager,
-      jobDiscription,
-      pdcDate,
-      tANDc,
-    } = req?.body;
+      orgRate,
+      createdBy,
+    } = req.body;
+
+    let orgAgree = null;
+    if (req.files && req.files["orgAgreeDoc"] && req.files["orgAgreeDoc"][0]) {
+      orgAgree = req.files["orgAgreeDoc"][0].filename;
+    }
 
     const updatedData = {
       primaryPOCName,
@@ -46,32 +54,23 @@ router.post("/api/updateCompanyById", async (req, res) => {
       secondaryPOCDesignation,
       companyName,
       orgCategory,
-      vacancyStatus,
-      jobProfile,
-      sector,
-      location,
-      noOfVacancy,
-      salaryRangeMin,
-      salaryRangeMax,
-      experience,
-      dateOfCreation,
-      recruitementManager,
-      jobDiscription,
-      pdcDate,
-      tANDc,
+      orgRate,
+      createdBy,
+      orgAgree, // updated if file uploaded
     };
 
     const result = await Company.update(updatedData, {
       where: { companyId },
       returning: true,
     });
+
     res.status(200).json({
       errorCode: 0,
-      message: "Data Updated Successfully",
+      message: "Company updated successfully",
       data: result,
     });
   } catch (error) {
-    console.error("Error in Data Updating", error);
+    console.error("Error in Company Updating", error);
     return res.status(500).json({
       data: null,
       error: commonErrorCodes.somthingWentWrong.msg,
