@@ -14,53 +14,50 @@ router.get("/api/getAllCompany", async (req, res) => {
 
     const filterConditions = {};
 
-    // Text filters
+    // ✅ Text filters
     if (req.query.companyName) {
-      filterConditions.companyName = {
-        [Op.like]: `%${req.query.companyName}%`,
-      };
+      filterConditions.companyName = { [Op.like]: `%${req.query.companyName}%` };
     }
     if (req.query.primaryPOCMobile) {
-      filterConditions.primaryPOCMobile = {
-        [Op.like]: `%${req.query.primaryPOCMobile}%`,
-      };
+      filterConditions.primaryPOCMobile = { [Op.like]: `%${req.query.primaryPOCMobile}%` };
     }
     if (req.query.primaryPOCEmail) {
-      filterConditions.primaryPOCEmail = {
-        [Op.like]: `%${req.query.primaryPOCEmail}%`,
-      };
+      filterConditions.primaryPOCEmail = { [Op.like]: `%${req.query.primaryPOCEmail}%` };
     }
     if (req.query.orgCategory) {
-      filterConditions.orgCategory = {
-        [Op.like]: `%${req.query.orgCategory}%`,
-      };
+      filterConditions.orgCategory = { [Op.like]: `%${req.query.orgCategory}%` };
     }
     if (req.query.orgRate) {
-      filterConditions.orgRate = {
-        [Op.like]: `%${req.query.orgRate}%`,
-      };
+      filterConditions.orgRate = { [Op.like]: `%${req.query.orgRate}%` };
     }
     if (req.query.createdBy) {
-      filterConditions.createdBy = {
-        [Op.eq]: req.query.createdBy,
-      };
+      filterConditions.createdBy = { [Op.eq]: req.query.createdBy };
     }
 
-    // Build base access condition
-    const empRecord = await Employees.findOne({ where: { empId } });
+    // ✅ Handle empId-based access
+    let isSuperOrAdmin = false;
 
-    if (!empRecord) {
-      return res.status(401).json({
-        errorCode: 1,
-        message: "Unauthorized: Employee not found",
-        data: [],
-      });
+    if (empId) {
+      const empRecord = await Employees.findOne({ where: { empId } });
+
+      if (!empRecord) {
+        console.warn("Employee not found for empId:", empId);
+        // If employee not found, return empty results
+        return res.status(200).json({
+          errorCode: 0,
+          message: "No employee record found",
+          data: [],
+          totalRecords: 0,
+          currentPage: page,
+          totalPages: 0,
+        });
+      }
+
+      isSuperOrAdmin = ["SuperAdmin", "AdminEM"].includes(empRecord.role);
     }
 
-    const isSuperOrAdmin =
-      empRecord.role === "SuperAdmin" || empRecord.role === "AdminEM";
-
-    if (!isSuperOrAdmin) {
+    // ✅ If not super/admin, restrict by empId
+    if (!isSuperOrAdmin && empId) {
       filterConditions.createdBy = empId;
     }
 
@@ -89,5 +86,6 @@ router.get("/api/getAllCompany", async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;
