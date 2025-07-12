@@ -35,7 +35,7 @@ router.get("/api/getAllCandidates", async (req, res) => {
       });
     }
 
-    // ✅ Standard individual filters
+    
     const textFilters = [
       "firstName",
       "lastName",
