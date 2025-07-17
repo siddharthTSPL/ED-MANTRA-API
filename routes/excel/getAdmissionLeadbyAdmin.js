@@ -20,8 +20,33 @@ router.get(
       const limit = parseInt(req.query.limit) || 50;
       const offset = (page - 1) * limit;
 
+      const whereClause = { status: "Admission" };
+
+      // Text filters
+      const likeFields = ["fullName", "mobile", "city", "pincode", "query", "status", "source", "telecaller"];
+      likeFields.forEach((field) => {
+        if (req.query[field]) {
+          whereClause[field] = { [Op.like]: `%${req.query[field]}%` };
+        }
+      });
+
+      // Date range filters
+      const applyDateRange = (key) => {
+        const from = req.query[`${key}From`];
+        const to = req.query[`${key}To`];
+        if (from || to) {
+          whereClause[key] = {};
+          if (from) whereClause[key][Op.gte] = new Date(from);
+          if (to) whereClause[key][Op.lte] = new Date(to);
+        }
+      };
+
+      applyDateRange("nextfollow");
+      applyDateRange("createdAt");
+      applyDateRange("updatedAt");
+
       const leads = await ExcelData.findAll({
-        where: { status: "Admission" },
+        where: whereClause,
         offset,
         limit,
         attributes: [
@@ -56,19 +81,15 @@ router.get(
                 required: true,
               },
             ],
-            separate: true,
-            limit: 1,
             order: [["createdAt", "DESC"]],
           },
         ],
         order: [["SrNo", "ASC"]],
       });
 
-      const cleanData = leads.filter(row => row && typeof row.SrNo !== "undefined");
+      const cleanData = leads.filter(row => typeof row.SrNo !== "undefined");
 
-      const totalCount = await ExcelData.count({
-        where: { status: "Admission" },
-      });
+      const totalCount = await ExcelData.count({ where: whereClause });
 
       return res.status(200).json({
         data: cleanData,
@@ -86,5 +107,6 @@ router.get(
     }
   }
 );
+
 
 module.exports = router;

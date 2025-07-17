@@ -21,11 +21,38 @@ router.get(
       const limit = parseInt(req.query.limit) || 50;
       const offset = (page - 1) * limit;
 
+      // Build where clause
+      const whereClause = {
+        telecaller: empId,
+        status: "Registration", // ✅ fixed status
+      };
+
+      // === Text filters ===
+      const likeFields = ["fullName", "mobile", "city", "pincode", "query", "source", "telecaller"];
+      likeFields.forEach((field) => {
+        if (req.query[field]) {
+          whereClause[field] = { [Op.like]: `%${req.query[field]}%` };
+        }
+      });
+
+      // === Date filter helper ===
+      const applyDateRange = (key) => {
+        const from = req.query[`${key}From`];
+        const to = req.query[`${key}To`];
+        if (from || to) {
+          whereClause[key] = {};
+          if (from) whereClause[key][Op.gte] = new Date(from);
+          if (to) whereClause[key][Op.lte] = new Date(to);
+        }
+      };
+
+      applyDateRange("nextfollow");
+      applyDateRange("createdAt");
+      applyDateRange("updatedAt");
+
+      // === Fetch paginated, filtered, full-remark data ===
       const leads = await ExcelData.findAll({
-        where: {
-          telecaller: empId,
-          status: "Registration",
-        },
+        where: whereClause,
         offset,
         limit,
         attributes: [
@@ -52,6 +79,7 @@ router.get(
         include: [
           {
             model: Remarks,
+            separate: true, // ✅ fetch all without affecting pagination
             attributes: ["remark", "remarkDateTime", "empId", "createdAt"],
             include: [
               {
@@ -60,8 +88,6 @@ router.get(
                 required: true,
               },
             ],
-            separate: true,
-            limit: 1,
             order: [["createdAt", "DESC"]],
           },
         ],
@@ -70,12 +96,7 @@ router.get(
 
       const cleanData = leads.filter((row) => row && typeof row.SrNo !== "undefined");
 
-      const totalCount = await ExcelData.count({
-        where: {
-          telecaller: empId,
-          status: "Registration",
-        },
-      });
+      const totalCount = await ExcelData.count({ where: whereClause });
 
       return res.status(200).send({
         data: cleanData,
