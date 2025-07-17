@@ -20,8 +20,47 @@ router.get(
       const limit = parseInt(req.query.limit) || 50;
       const offset = (page - 1) * limit;
 
+      // === Where clause for all registration leads ===
+      const whereClause = {
+        status: "Registration",
+      };
+
+      // === Text filters ===
+      const likeFields = [
+        "fullName",
+        "mobile",
+        "city",
+        "pincode",
+        "query",
+        "status",
+        "source",
+        "telecaller", // ✅ telecaller filter support (dropdown)
+      ];
+
+      likeFields.forEach((field) => {
+        if (req.query[field]) {
+          whereClause[field] = { [Op.like]: `%${req.query[field]}%` };
+        }
+      });
+
+      // === Date filters ===
+      const applyDateRange = (key) => {
+        const from = req.query[`${key}From`];
+        const to = req.query[`${key}To`];
+        if (from || to) {
+          whereClause[key] = {};
+          if (from) whereClause[key][Op.gte] = new Date(from);
+          if (to) whereClause[key][Op.lte] = new Date(to);
+        }
+      };
+
+      applyDateRange("nextfollow");
+      applyDateRange("createdAt");
+      applyDateRange("updatedAt");
+
+      // === Fetch leads with full remarks ===
       const leads = await ExcelData.findAll({
-        where: { status: "Registration" },
+        where: whereClause,
         offset,
         limit,
         attributes: [
@@ -48,6 +87,7 @@ router.get(
         include: [
           {
             model: Remarks,
+            separate: true, // ✅ prevents join-based duplication
             attributes: ["remark", "remarkDateTime", "empId", "createdAt"],
             include: [
               {
@@ -56,8 +96,6 @@ router.get(
                 required: true,
               },
             ],
-            separate: true,
-            limit: 1,
             order: [["createdAt", "DESC"]],
           },
         ],
@@ -66,16 +104,14 @@ router.get(
 
       const cleanData = leads.filter((row) => row && typeof row.SrNo !== "undefined");
 
-      const totalCount = await ExcelData.count({
-        where: { status: "Registration" },
-      });
+      const totalCount = await ExcelData.count({ where: whereClause });
 
       return res.status(200).json({
         data: cleanData,
         totalCount,
         currentPage: page,
         totalPages: Math.ceil(totalCount / limit),
-        message: "Registered leads fetched successfully",
+        message: "Registered leads fetched successfully (Admin view)",
       });
     } catch (error) {
       console.error("Error in /api/getRegisteredLeadbyAdmin:", error);

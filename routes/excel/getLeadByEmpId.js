@@ -18,11 +18,38 @@ router.get("/api/getLeadByEmpId/:employeeId", authenticate(accessibleModules), a
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
 
+    // Build dynamic filters
+    const whereClause = {
+      telecaller: empId,
+      status: { [Op.notIn]: ["Registration", "Admission"] },
+    };
+
+    // === Text filters ===
+    const likeFields = ["fullName", "mobile", "city", "pincode", "query", "status", "source"];
+    likeFields.forEach((field) => {
+      if (req.query[field]) {
+        whereClause[field] = { [Op.like]: `%${req.query[field]}%` };
+      }
+    });
+
+    // === Date filter helper ===
+    const applyDateRange = (key) => {
+      const from = req.query[`${key}From`];
+      const to = req.query[`${key}To`];
+      if (from || to) {
+        whereClause[key] = {};
+        if (from) whereClause[key][Op.gte] = new Date(from);
+        if (to) whereClause[key][Op.lte] = new Date(to);
+      }
+    };
+
+    applyDateRange("nextfollow");
+    applyDateRange("createdAt");
+    applyDateRange("updatedAt");
+
+    // === Fetch filtered data ===
     const leads = await ExcelData.findAll({
-      where: {
-        telecaller: empId,
-        status: { [Op.notIn]: ["Registration", "Admission"] },
-      },
+      where: whereClause,
       offset,
       limit,
       attributes: [
@@ -46,33 +73,29 @@ router.get("/api/getLeadByEmpId/:employeeId", authenticate(accessibleModules), a
         "updatedAt",
         "nextfollow",
       ],
+     
       include: [
-        {
-          model: Remarks,
-          attributes: ["remark", "remarkDateTime", "empId", "createdAt"],
-          include: [
-            {
-              model: Employees,
-              attributes: ["fname", "role"],
-              required: true,
-            },
-          ],
-          separate: true,
-          limit: 1,
-          order: [["createdAt", "DESC"]],
-        },
-      ],
+  {
+    model: Remarks,
+    separate: true, // ✅ This is critical for hasMany to avoid pagination break
+    attributes: ["remark", "remarkDateTime", "empId", "createdAt"],
+    include: [
+      {
+        model: Employees,
+        attributes: ["fname", "role"],
+        required: true,
+      },
+    ],
+    order: [["createdAt", "DESC"]],
+  },
+],
+
       order: [["SrNo", "ASC"]],
     });
 
     const cleanData = leads.filter(row => row && typeof row.SrNo !== "undefined");
 
-    const totalCount = await ExcelData.count({
-      where: {
-        telecaller: empId,
-        status: { [Op.notIn]: ["Registration", "Admission"] },
-      },
-    });
+    const totalCount = await ExcelData.count({ where: whereClause });
 
     res.status(200).json({
       data: cleanData,
@@ -89,5 +112,6 @@ router.get("/api/getLeadByEmpId/:employeeId", authenticate(accessibleModules), a
     });
   }
 });
+
 
 module.exports = router;
