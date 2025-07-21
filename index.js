@@ -92,7 +92,6 @@ app.use(require("./routes/company/bulkAssign"));
 app.use(require("./routes/vacancy/deleteVacancyById"));
 const downloadDocRoutes = require("./routes/ats/downloadDoc");
 app.use("/api", downloadDocRoutes);
-
 const downloadOrgDocRoutes = require("./routes/company/downloadDoc");
 app.use("/api", downloadOrgDocRoutes);
 app.use(require("./routes/marketing/addMarketingLeads"));
@@ -111,10 +110,7 @@ app.use(require("./routes/company/deleteBulkCompany"));
 app.use(require("./routes/dashboard/addNotice")); 
 app.use(require("./routes/dashboard/getNotice"));
 app.use(require("./routes/ats/searchCandidates"));
-// app.use(require("./routes/ats/assignLocation"));
-// app.use(require("./routes/ats/assignSector"));
-// app.use(require("./routes/ats/CandidateRegistartionByEmpId"));
-// app.use(require("./routes/ats/getCandidateByEmpId"));
+app.use(require("./routes/dashboard/deleteNotice"));
 
 // Schedule task to run every day at midnight
 cron.schedule('0 0 * * *', async () => {
