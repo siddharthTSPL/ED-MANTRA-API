@@ -14,6 +14,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const cron = require("node-cron"); // Import node-cron
+const path = require("path");
 require("dotenv").config();
 const port = process.env.PORT;
 
@@ -111,7 +112,7 @@ app.use(require("./routes/dashboard/addNotice"));
 app.use(require("./routes/dashboard/getNotice"));
 app.use(require("./routes/ats/searchCandidates"));
 app.use(require("./routes/dashboard/deleteNotice"));
-
+app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
 // Schedule task to run every day at midnight
 cron.schedule('0 0 * * *', async () => {
   const thirtyDaysAgo = new Date(new Date() - 30 * 24 * 60 * 60 * 1000);
