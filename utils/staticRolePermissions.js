@@ -145,7 +145,6 @@ const permissions = {
   ],
 
   Telecaller: [
-    
     {
       id: "user_per-01",
       permission: "USER_MANAGEMENT",
@@ -276,6 +275,13 @@ const permissions = {
       permission: "USER_MANAGEMENT",
     },
   ],
+  
+  Vendor_ATS: [
+    {
+      id: "user_per-25",
+      permission: "REPORTING_ATS",
+    },
+  ],
 };
 
 const rolePermissions = (key) => {
@@ -312,6 +318,8 @@ const rolePermissions = (key) => {
       return JSON.stringify(permissions?.MarketingManager);
     case "MarketingExecutive":
       return JSON.stringify(permissions?.MarketingExecutive);
+    case "Vendor ATS":
+      return JSON.stringify(permissions?.Recruiter);
     default:
       break;
   }
