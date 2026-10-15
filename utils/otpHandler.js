@@ -1,59 +1,35 @@
 const sendEmail = require("../controller/emailer");
 const hash = require("./hashData");
 const Employees = require("../modals/employees");
-const { commonErrorCodes } = require("../statusCodes/errorCodes");
-const { commonSeccessCodes } = require("../statusCodes/successCodes");
-var currentDateTime = new Date();
 
-
-const handelOtp= async(data , res) =>{
-  const hashOtp = hash(data?.otp);
+// Saves the hashed OTP and emails it to the employee.
+// It does NOT send an HTTP response; the caller is responsible for that.
+// Returns true if the OTP was saved and the email was accepted, otherwise false.
+const otpHandler = async (data) => {
   try {
+    const hashOtp = hash(data?.otp);
     const updated = await Employees.update(
-      { otp: hashOtp, otpCreatedTime: currentDateTime.toString() },
+      { otp: hashOtp, otpCreatedTime: new Date().toString() },
       { where: { empId: data?.empId } }
     );
-    if (updated) {
-      const is_Send = await sendEmail({
-        email: data?.email,
-        subject: data?.subject,
-        template: data?.template,
-      });
-      if (!is_Send) {
-        return res.json({
-          data: null,
-          error: commonErrorCodes?.otpNotSend?.msg,
-          status: commonErrorCodes?.otpNotSend?.code,
-          message: null,
-        });
-      } else {
-        return res.json({
-          data: null,
-          error: null,
-          message: commonSeccessCodes?.otpSent?.msg,
-          status: commonSeccessCodes?.otpSent?.code,
-        });
-      }
-    } else {
-      return res.json({
-        data: null,
-        error: commonErrorCodes?.dataNotSetToDB?.msg,
-        status: commonErrorCodes?.dataNotSetToDB?.code,
-        message: null,
-      });
+    if (!updated) {
+      console.error("OTP not saved to DB for empId:", data?.empId);
+      return false;
     }
-  } catch (error) {
-    return res.json({
-      data: null,
-      error: null,
-      status: commonErrorCodes?.somthingWentWrong?.code,
-      message: commonErrorCodes?.somthingWentWrong?.msg,
+
+    const isSent = await sendEmail({
+      email: data?.email,
+      subject: data?.subject,
+      template: data?.template,
     });
+    if (!isSent) {
+      console.error("OTP email not accepted for empId:", data?.empId);
+    }
+    return isSent;
+  } catch (error) {
+    console.error("OTP handling failed:", error.message);
+    return false;
   }
-}
- 
-const otpHandler = async (data , res) => {
-  return await handelOtp(data , res).catch((error)=>console.log(error))
 };
 
 module.exports = otpHandler;

@@ -89,6 +89,11 @@ router.get("/api/getAllCandidates", async (req, res) => {
       const comparator = req.query.dob.comparator || "=";
 
       if (!isNaN(age)) {
+        // "NA" / blank DOB wale candidates age filter me nahi aane chahiye
+        whereConditions[Op.and].push({
+          dob: { [Op.and]: [{ [Op.ne]: null }, { [Op.notIn]: ["NA", ""] }] },
+        });
+
         const today = new Date();
         const lower = new Date(today.getFullYear() - age, today.getMonth(), today.getDate());
         const upper = new Date(today.getFullYear() - age, today.getMonth(), today.getDate() + 1);
@@ -114,9 +119,9 @@ router.get("/api/getAllCandidates", async (req, res) => {
       }
     }
 
-    // ✅ Numeric filters
+    // ✅ Numeric filters (NA / blank / garbage values pe crash nahi karega)
     const numericFields = [
-      { field: "yearsOfExperience", cast: "INTEGER", regex: "[^0-9]" },
+      { field: "yearsOfExperience", cast: "DECIMAL", regex: "[^0-9.]" },
       { field: "currentCTC", cast: "DECIMAL", regex: "[^0-9.]" },
       { field: "expectedCTC", cast: "DECIMAL", regex: "[^0-9.]" },
     ];
@@ -126,9 +131,13 @@ router.get("/api/getAllCandidates", async (req, res) => {
         const value = Number(req.query[field].number);
         const comparator = req.query[field].comparator || "=";
         if (!isNaN(value)) {
+          // "NA" -> '' -> NULL (ya valid number nahi) => CAST nahi hota, row filter me se bahar rehti hai
+          const cleaned = `regexp_replace("${field}", '${regex}', '', 'g')`;
           whereConditions[Op.and].push(
             where(
-              literal(`CAST(regexp_replace("${field}", '${regex}', '', 'g') AS ${cast})`),
+              literal(
+                `(CASE WHEN ${cleaned} ~ '^[0-9]+(\\.[0-9]+)?$' THEN CAST(${cleaned} AS ${cast}) ELSE NULL END)`
+              ),
               opMap[comparator] || Op.eq,
               value
             )

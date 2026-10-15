@@ -3,6 +3,7 @@ const router = express.Router();
 const CandidateRegistration = require("../../modals/ats");
 const multer = require("multer");
 const { commonErrorCodes } = require("../../statusCodes/errorCodes");
+const { applyNA } = require("../../utils/naDefaults");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -55,7 +56,7 @@ router.post("/api/updateCandidateById", upload.fields([
     } = req.body;
 
     // Create the updatedData object
-    const updatedData = {
+    let updatedData = {
       firstName,
       lastName,
       gender,
@@ -85,6 +86,9 @@ router.post("/api/updateCandidateById", upload.fields([
       mailingAddress,
       mailingCity,
     };
+
+    // Blank bheji gayi fields ko "NA" karo (jo field bheji hi nahi gayi use chhedo mat)
+    updatedData = applyNA(updatedData, { onlyIfPresent: true });
 
     // Check if req.files exists and if specific files were uploaded
     if (req.files && req.files["aadhar"]) {

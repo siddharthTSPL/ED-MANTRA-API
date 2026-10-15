@@ -1,15 +1,12 @@
 const nodemailer = require("nodemailer");
-const HOST =process.env.TRANSPORTER_HOST;
-const PORT = process.env.TRANSPORTER_PORT;
-const USER = process.env.TRANSPORTER_USER;
-const PASS = process.env.TRANSTORTER_PASS;
 
 const transporter = nodemailer.createTransport({
-  host:HOST,
-  port:PORT,
+  host: process.env.SMTP_HOST || "smtp.zoho.com", // use smtp.zoho.in if the Zoho account is in the India data center
+  port: Number(process.env.SMTP_PORT) || 465,
+  secure: true, // SSL on 465
   auth: {
-    user:USER,
-    pass:PASS,
+    user: process.env.SUPPORT_EMAIL,
+    pass: process.env.SUPPORT_EMAIL_PASSWORD,
   },
 });
 

@@ -6,6 +6,7 @@ const path = require("path");
 const { Sequelize, Op } = require("sequelize");
 const { commonErrorCodes } = require("../../statusCodes/errorCodes");
 const CandidateRegistration = require("../../modals/ats");
+const { applyNA } = require("../../utils/naDefaults");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -45,10 +46,23 @@ router.post('/api/uploadCandidate', upload.single('file'), async (req, res) => {
 
     // Extract candidate data and collect phone numbers
     for (const row of dataRows) {
-      const candidateData = {};
+      // Poori khaali Excel row skip karo (warna sab "NA" wali fake entry ban jayegi)
+      if (!row || row.every((cell) => cell === undefined || cell === null || String(cell).trim() === "")) {
+        continue;
+      }
+
+      let candidateData = {};
       columnSequence.forEach((column, index) => {
         candidateData[column] = row[index];
       });
+
+      // Blank cells -> "NA"
+      candidateData = applyNA(candidateData);
+
+      // Phone unique hai: blank ho to null rakho (NA nahi)
+      if (candidateData.phone === undefined || String(candidateData.phone).trim() === "") {
+        candidateData.phone = null;
+      }
 
       if (candidateData.phone) {
         const phone = String(candidateData.phone).trim();

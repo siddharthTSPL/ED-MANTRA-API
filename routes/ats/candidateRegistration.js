@@ -6,6 +6,7 @@ const { Sequelize } = require("sequelize"); // Add this import
 
 const { commonErrorCodes } = require("../../statusCodes/errorCodes");
 const CandidateRegistration = require("../../modals/ats");
+const { applyNA } = require("../../utils/naDefaults");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -63,7 +64,7 @@ router.post("/api/registerCandidate", upload.fields([
     const latestPhoto = req.files?.["photo"] ? req.files["photo"][0].filename : null;
 
     // Create the candidate registration record
-    const result = await CandidateRegistration.create({
+    const result = await CandidateRegistration.create(applyNA({
       firstName,
       lastName,
       gender,
@@ -96,7 +97,7 @@ router.post("/api/registerCandidate", upload.fields([
       residentialCity,
       mailingAddress,
       mailingCity
-    });
+    }));
 
     res.status(200).json({
       errorCode: 0,

@@ -43,7 +43,7 @@ const empLoginValidation = async (data, res) => {
         otp: otp,
       }),
     };
-     otpHandler(emailData, res);
+    otpHandler(emailData); // runs in background; response is sent below
     return sendRes(
       {
         ...commonErrorCodes?.userNotVerifiedOtpSent,

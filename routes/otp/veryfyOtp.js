@@ -5,7 +5,6 @@ const moment = require("moment");
 const { commonErrorCodes } = require("../../statusCodes/errorCodes");
 const { commonSeccessCodes } = require("../../statusCodes/successCodes");
 const decryptData = require("../../utils/decryptData");
-var currentDateTime = new Date();
 
 
 router.post("/api/veryfyOtp", async(req, res) => {
@@ -13,14 +12,11 @@ router.post("/api/veryfyOtp", async(req, res) => {
     const isPresent = await Employees.findOne({
       where: { empId: req?.body?.empId },
     });
-    const createdTime = parseInt(
-      moment(isPresent?.dataValues?.otpCreatedTime).format("mm")
+    // minutes since the OTP was created
+    const otpAgeMinutes = moment().diff(
+      moment(new Date(isPresent?.dataValues?.otpCreatedTime)),
+      "minutes"
     );
-    const createdDate = moment(isPresent?.dataValues?.otpCreatedTime).format(
-      "DD-MM-YYY"
-    );
-    const curretime = parseInt(moment(currentDateTime).format("mm"));
-    const currDate = moment(currentDateTime).format("DD-MM-YYYY");
 
     if (decryptData(isPresent?.dataValues?.otp)!==req?.body?.otp) {
       return res.json({
@@ -30,7 +26,7 @@ router.post("/api/veryfyOtp", async(req, res) => {
         status: commonErrorCodes?.wrongOtp?.code
       });
     } else {
-      if (Math.abs(createdDate !== currDate && createdTime - curretime) > 5) {
+      if (!(otpAgeMinutes >= 0 && otpAgeMinutes <= 5)) {
         return res.json({
           data: null,
           error:commonErrorCodes?.otpExpired?.msg,
