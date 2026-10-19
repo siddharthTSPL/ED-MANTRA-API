@@ -9,6 +9,7 @@ const express = require("express");
 // const MarketingRemarks = require("./modals/marketingRemarks");
 //const Location = require('./modals/locations')(sequelize, DataTypes);
 //const Sector = require('./modals/sector')(sequelize, DataTypes);
+
 const app = express();
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -16,6 +17,9 @@ const cookieParser = require("cookie-parser");
 const cron = require("node-cron"); // Import node-cron
 const path = require("path");
 require("dotenv").config();
+
+const CompanyRemarks = require("./modals/companyRemarks");
+require("./modals/associations");
 const port = process.env.PORT;
 
 app.use(
@@ -68,7 +72,10 @@ app.use(require("./routes/excel/recoverBulkLead"));
 app.use(require("./routes/company/addCompany"));
 app.use(require("./routes/company/getAllCompany"));
 app.use(require("./routes/company/getAllComapnyUniquely"));
-// app.use(require("./routes/company/getCompanyById"));
+app.use(require("./routes/company/deadbulkCompany"));
+app.use(require("./routes/company/recoverbulkCompany"));
+app.use(require("./routes/company/getdeadCompany"));
+app.use(require("./routes/company/getCompanyById"));
 app.use(require("./routes/company/updateCompanyById"));
 app.use(require("./routes/company/deleteCompanyById"));
 app.use(require("./routes/interview/addInterview"));
