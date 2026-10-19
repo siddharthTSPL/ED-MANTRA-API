@@ -4,13 +4,11 @@ const { DataTypes } = require("sequelize");
 const Company = sequelize.define(
   "CompanyMangement",
   {
-
-
     SrNo: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       allowNull: false,
-      unique: true, // Ensure uniqueness for SrNo
+      unique: true,
     },
 
     companyId: {
@@ -19,43 +17,53 @@ const Company = sequelize.define(
       primaryKey: true,
       allowNull: false,
     },
+
     primaryPOCName: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     primaryPOCMobile: {
       type: DataTypes.STRING,
       allowNull: true,
-      unique: true, // Unique constraint
+      unique: true,
     },
+
     primaryPOCEmail: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     primaryPOCDesignation: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     secondaryPOCName: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     secondaryPOCMobile: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    secondaryPOCEmail: {
+
+    companyStatus: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    secondaryPOCDesignation: {
-      type: DataTypes.STRING,
+
+    followupDate: {
+      type: DataTypes.DATE,
       allowNull: true,
     },
+
     companyName: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     orgCategory: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -75,7 +83,6 @@ const Company = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-
   },
   {
     tableName: "CompanyMangement",
