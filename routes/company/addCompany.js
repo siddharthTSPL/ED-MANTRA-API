@@ -21,7 +21,7 @@ router.post("/api/addCompany", upload.fields([
   try {
     console.log("Files:", req.files);  // Debugging log
     console.log("Body:", req.body);    // Debugging log
-    
+
     let orgAgree = null;
 
     // Check if the file is uploaded
@@ -37,8 +37,8 @@ router.post("/api/addCompany", upload.fields([
       primaryPOCDesignation,
       secondaryPOCName,
       secondaryPOCMobile,
-      secondaryPOCEmail,
-      secondaryPOCDesignation,
+      companyStatus,
+      followupDate,
       companyName,
       orgCategory,
       orgRate,
@@ -63,8 +63,8 @@ router.post("/api/addCompany", upload.fields([
       primaryPOCDesignation,
       secondaryPOCName,
       secondaryPOCMobile,
-      secondaryPOCEmail,
-      secondaryPOCDesignation,
+      companyStatus,
+      followupDate,
       companyName,
       orgCategory,
       orgRate,
